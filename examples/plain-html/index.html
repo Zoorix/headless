@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Zoorix headless: plain HTML example</title>
+
+    <!-- 2. The Zoorix script. -->
+    <script type="module" src="https://admin.zoorix-bundle-kit.com/assets/headless/v1/zoorix.js"></script>
+
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; margin: 0; color: #1d2939; }
+      header, main { max-width: 960px; margin: 0 auto; padding: 16px; }
+      header { display: flex; justify-content: space-between; align-items: center; }
+      fieldset { border: 1px solid #d0d5dd; border-radius: 8px; margin: 0 0 16px; }
+      label { margin-right: 12px; }
+      .muted { color: #667085; font-size: 14px; }
+      #cart li { margin: 4px 0; }
+    </style>
+  </head>
+  <body>
+    <!-- 3. Once per page. The script below fills in cart-id and cart-updated-at. -->
+    <zoorix-store id="store"></zoorix-store>
+
+    <header>
+      <strong>Example store</strong>
+      <!-- 5. Your own cart link, wrapped: opens the Zoorix drawer when it's enabled. -->
+      <zoorix-cart-button>
+        <a href="#cart">Cart (<span id="cart-count">0</span>)</a>
+      </zoorix-cart-button>
+    </header>
+
+    <!-- 7. Optional. -->
+    <zoorix-promotion-bar></zoorix-promotion-bar>
+
+    <main>
+      <fieldset>
+        <legend>Try it</legend>
+        <p>
+          <label>Product handle <input id="handle" placeholder="first product" /></label>
+          <button id="load-product" type="button">Load</button>
+        </p>
+        <p>
+          <label>Variant <select id="variant"></select></label>
+          <label>
+            Country
+            <select id="country">
+              <option value="">Primary market</option>
+              <option>US</option>
+              <option>CA</option>
+              <option>GB</option>
+              <option>IL</option>
+            </select>
+          </label>
+          <button id="add-outside" type="button">Add this variant without Zoorix</button>
+        </p>
+        <p class="muted" id="status"></p>
+      </fieldset>
+
+      <h1 id="product-title">Loading…</h1>
+      <p id="product-price"></p>
+
+      <!-- 6. Offers for this product and variant. The script updates both attributes. -->
+      <zoorix-offers id="offers"></zoorix-offers>
+
+      <section id="cart">
+        <h2>Cart</h2>
+        <ul id="cart-lines"></ul>
+        <p id="cart-total"></p>
+        <p><a id="checkout" href="#">Checkout</a></p>
+      </section>
+    </main>
+
+    <script type="module">
+      // Configuration: edit these, or pass ?shop=…&token=…&product=… in the URL.
+      // The token is your storefront's PUBLIC Storefront API token -- the same one saved in
+      // Zoorix → Settings → Headless storefront. Never put a private token in a page.
+      const params = new URLSearchParams(location.search);
+      const SHOP = params.get('shop') || 'your-shop.myshopify.com';
+      const TOKEN = params.get('token') || 'your-public-storefront-api-token';
+      const API_VERSION = '2026-04';
+      const CART_KEY = `zoorix-example-cart:${SHOP}`;
+
+      const $ = (id) => document.getElementById(id);
+      const store = $('store');
+      const offers = $('offers');
+      let product = null;
+      let country = '';
+
+      const storefront = async (query, variables = {}) => {
+        const response = await fetch(`https://${SHOP}/api/${API_VERSION}/graphql.json`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': TOKEN },
+          body: JSON.stringify({ query, variables }),
+        });
+        const { data, errors } = await response.json();
+        if (errors?.length) throw new Error(errors[0].message);
+        return data;
+      };
+
+      const CART_FIELDS = `
+        id
+        updatedAt
+        checkoutUrl
+        totalQuantity
+        cost { totalAmount { amount currencyCode } }
+        lines(first: 50) {
+          nodes { id quantity merchandise { ... on ProductVariant { id title product { title } } } }
+        }`;
+      const inContext = '@inContext(country: $country)';
+      const countryVariable = () => ({ country: country || null });
+
+      const money = ({ amount, currencyCode }) =>
+        new Intl.NumberFormat(undefined, { style: 'currency', currency: currencyCode }).format(Number(amount));
+
+      // 1. A cart before Zoorix renders: reuse the stored one, or create it.
+      const ensureCart = async () => {
+        const storedId = localStorage.getItem(CART_KEY);
+        if (storedId) {
+          const { cart } = await storefront(
+            `query ($id: ID!, $country: CountryCode) ${inContext} { cart(id: $id) { ${CART_FIELDS} } }`,
+            { id: storedId, ...countryVariable() },
+          );
+          if (cart) return cart;
+        }
+        const { cartCreate } = await storefront(
+          `mutation ($input: CartInput!, $country: CountryCode) ${inContext} {
+            cartCreate(input: $input) { cart { ${CART_FIELDS} } userErrors { message } }
+          }`,
+          { input: country ? { buyerIdentity: { countryCode: country } } : {}, ...countryVariable() },
+        );
+        localStorage.setItem(CART_KEY, cartCreate.cart.id);
+        return cartCreate.cart;
+      };
+
+      const refreshCart = async () => {
+        const { cart } = await storefront(
+          `query ($id: ID!, $country: CountryCode) ${inContext} { cart(id: $id) { ${CART_FIELDS} } }`,
+          { id: localStorage.getItem(CART_KEY), ...countryVariable() },
+        );
+        renderCart(cart);
+      };
+
+      const renderCart = (cart) => {
+        // 3. Every attribute is live: Zoorix follows the cart as it changes.
+        store.setAttribute('cart-id', cart.id);
+        store.setAttribute('cart-updated-at', cart.updatedAt);
+
+        $('cart-count').textContent = String(cart.totalQuantity);
+        $('cart-total').textContent = `Total: ${money(cart.cost.totalAmount)}`;
+        $('checkout').href = cart.checkoutUrl;
+        $('cart-lines').replaceChildren(
+          ...cart.lines.nodes.map((line) => {
+            const item = document.createElement('li');
+            item.textContent = `${line.quantity} × ${line.merchandise.product.title} (${line.merchandise.title})`;
+            return item;
+          }),
+        );
+      };
+
+      const loadProduct = async () => {
+        const handle = $('handle').value.trim();
+        const fields = `id title variants(first: 50) { nodes { id title price { amount currencyCode } } }`;
+        const data = handle
+          ? await storefront(`query ($handle: String!, $country: CountryCode) ${inContext} { product(handle: $handle) { ${fields} } }`, {
+              handle,
+              ...countryVariable(),
+            })
+          : await storefront(`query ($country: CountryCode) ${inContext} { products(first: 1) { nodes { ${fields} } } }`, countryVariable());
+        product = handle ? data.product : data.products.nodes[0];
+        if (!product) {
+          $('product-title').textContent = 'Product not found';
+          return;
+        }
+        $('product-title').textContent = product.title;
+        $('variant').replaceChildren(
+          ...product.variants.nodes.map((variant) => new Option(variant.title, variant.id)),
+        );
+        renderVariant();
+      };
+
+      const renderVariant = () => {
+        const variant = product.variants.nodes.find((node) => node.id === $('variant').value) ?? product.variants.nodes[0];
+        $('product-price').textContent = money(variant.price);
+        // 6. Product and variant for the offers. Changing them later is just another setAttribute.
+        offers.setAttribute('product-id', product.id);
+        offers.setAttribute('variant-id', variant.id);
+      };
+
+      const status = (message) => ($('status').textContent = message);
+
+      // 4. Zoorix changed the cart and it has settled: refetch it.
+      addEventListener('zrx:cart-changed', (event) => {
+        status(`zrx:cart-changed (${event.detail.reason}): refetching the cart`);
+        refreshCart();
+      });
+
+      $('load-product').addEventListener('click', () => loadProduct().catch((error) => status(error.message)));
+      $('variant').addEventListener('change', renderVariant);
+
+      $('country').addEventListener('change', async () => {
+        country = $('country').value;
+        if (country) store.setAttribute('country', country);
+        else store.removeAttribute('country');
+        // Keep the cart in the same market, so its currency matches.
+        await storefront(
+          `mutation ($cartId: ID!, $buyerIdentity: CartBuyerIdentityInput!) {
+            cartBuyerIdentityUpdate(cartId: $cartId, buyerIdentity: $buyerIdentity) { userErrors { message } }
+          }`,
+          { cartId: localStorage.getItem(CART_KEY), buyerIdentity: { countryCode: country || null } },
+        );
+        await Promise.all([refreshCart(), loadProduct()]);
+      });
+
+      // A change the storefront makes itself: the new updatedAt tells Zoorix to refetch.
+      $('add-outside').addEventListener('click', async () => {
+        await storefront(
+          `mutation ($cartId: ID!, $lines: [CartLineInput!]!) {
+            cartLinesAdd(cartId: $cartId, lines: $lines) { userErrors { message } }
+          }`,
+          { cartId: localStorage.getItem(CART_KEY), lines: [{ merchandiseId: $('variant').value, quantity: 1 }] },
+        );
+        status('Added without Zoorix: cart-updated-at changed, so Zoorix refetches');
+        await refreshCart();
+      });
+
+      store.setAttribute('shop', SHOP);
+      try {
+        renderCart(await ensureCart());
+        await loadProduct();
+      } catch (error) {
+        status(`${error.message}. Check shop and token at the top of this file.`);
+      }
+    </script>
+  </body>
+</html>
