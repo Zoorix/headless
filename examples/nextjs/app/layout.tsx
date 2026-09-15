@@ -45,7 +45,11 @@ export default async function RootLayout({
       <body className="bg-neutral-50 text-black selection:bg-teal-300 dark:bg-neutral-900 dark:text-white dark:selection:bg-pink-500 dark:selection:text-white">
         <CartProvider cartPromise={cart}>
           {/* After hydration (the default strategy), so Zoorix never adds content React hasn't hydrated yet. */}
-          <Script src={ZOORIX_SCRIPT} type="module" strategy="afterInteractive" />
+          <Script
+            src={ZOORIX_SCRIPT}
+            type="module"
+            strategy="afterInteractive"
+          />
           <Suspense fallback={null}>
             <ZoorixStore shop={SHOPIFY_STORE_DOMAIN} />
           </Suspense>
