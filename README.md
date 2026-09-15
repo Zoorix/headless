@@ -11,10 +11,10 @@ listener**. There is no package to install.
 - **This guide:** set it up in about ten minutes.
 - **[CONTRACT.md](./CONTRACT.md):** the full reference: every tag, attribute and event, and the rules
   behind them.
-- **Hydrogen:** Hydrogen is a headless storefront too, so everything here applies. A `hydrogen/`
-  folder with a copy-paste component and an example app is coming.
-- **[examples/](./examples/):** working storefronts for [plain HTML](./examples/plain-html/) and
-  [Next.js](./examples/nextjs/).
+- **[hydrogen/](./hydrogen/):** Hydrogen is a headless storefront too, so everything here applies;
+  that folder has the one file to copy and the Hydrogen version of this guide.
+- **[examples/](./examples/):** working storefronts for [plain HTML](./examples/plain-html/),
+  [Next.js](./examples/nextjs/) and [Hydrogen](./examples/hydrogen/).
 
 ## Before you start
 
@@ -42,6 +42,10 @@ arrives (most templates already do) and keep its ID, e.g. in a cookie.
 
 Anywhere on the page, once. Load order doesn't matter: tags rendered before the script loads start
 when it arrives.
+
+With a server-rendering React framework, load it **after hydration**: `next/script` (its default
+strategy) in Next.js, an effect in Hydrogen (as [hydrogen/Zoorix.tsx](./hydrogen/Zoorix.tsx) does). See
+[CONTRACT.md](./CONTRACT.md#server-rendering-and-hydration).
 
 ## 3. Add `<zoorix-store>` to your layout
 

@@ -58,6 +58,17 @@ Attributes in, events out. There's no JavaScript API. A tag rendered before the 
 attributes and starts when the script arrives, so load order never matters, and listening for
 `zrx:cart-changed` before the script loads is fine.
 
+### Server rendering and hydration
+
+Zoorix renders its offers and promotion bar inside its own tags. In a server-rendering React framework,
+load the script after the page has hydrated: if Zoorix fills a tag before React hydrates it, React
+sees content it didn't render, and re-renders that part of the page on the client.
+
+Render the tags themselves as usual, empty. With Next.js, load the script with `next/script` (its
+default `afterInteractive` strategy). With Hydrogen, add it from an effect, as
+[hydrogen/Zoorix.tsx](./hydrogen/Zoorix.tsx) does: Hydrogen's `<Script waitForHydration>` inserts a
+classic script, and `zoorix.js` is a module.
+
 ### Every attribute is live
 
 Change any attribute and Zoorix updates without a remount: a new `product-id` after client-side
@@ -157,6 +168,9 @@ If your storefront sends a CSP, allow:
 
 Custom JavaScript saved in Zoorix runs as an inline script; a CSP without `'unsafe-inline'` in
 `script-src` blocks it, and everything else keeps working.
+
+On Hydrogen, [hydrogen/README.md](./hydrogen/README.md#5-allow-zoorix-in-your-content-security-policy)
+shows these in `createContentSecurityPolicy`.
 
 ## Console messages
 
