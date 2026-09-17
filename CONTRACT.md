@@ -69,6 +69,11 @@ default `afterInteractive` strategy). With Hydrogen, add it from an effect, as
 [hydrogen/Zoorix.tsx](./hydrogen/Zoorix.tsx) does: Hydrogen's `<Script waitForHydration>` inserts a
 classic script, and `zoorix.js` is a module.
 
+Loading after hydration isn't enough for a tag inside a `<Suspense>` boundary: that boundary can hydrate
+later, once Zoorix is already running. Render such a tag only after its component has mounted, as the
+Next.js example's [zoorix-product-offers.tsx](./examples/nextjs/components/zoorix/zoorix-product-offers.tsx)
+does. Next.js App Router pages that read search params are the usual case.
+
 ### Every attribute is live
 
 Change any attribute and Zoorix updates without a remount: a new `product-id` after client-side

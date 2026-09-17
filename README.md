@@ -5,8 +5,7 @@ and a cart drawer on your storefront. On a headless storefront (plain HTML, Next
 anything else that renders HTML), you add it with **one script, a few tags and one event
 listener**. There is no package to install.
 
-> **Status:** preview. The v1 script URL below goes live with the Zoorix release that ships headless
-> support.
+> **Status:** v1 is live.
 
 - **This guide:** set it up in about ten minutes.
 - **[CONTRACT.md](./CONTRACT.md):** the full reference: every tag, attribute and event, and the rules
@@ -44,7 +43,8 @@ Anywhere on the page, once. Load order doesn't matter: tags rendered before the 
 when it arrives.
 
 With a server-rendering React framework, load it **after hydration**: `next/script` (its default
-strategy) in Next.js, an effect in Hydrogen (as [hydrogen/Zoorix.tsx](./hydrogen/Zoorix.tsx) does). See
+strategy) in Next.js, an effect in Hydrogen (as [hydrogen/Zoorix.tsx](./hydrogen/Zoorix.tsx) does). A
+Zoorix tag inside a `<Suspense>` boundary is rendered only after mount. See
 [CONTRACT.md](./CONTRACT.md#server-rendering-and-hydration).
 
 ## 3. Add `<zoorix-store>` to your layout

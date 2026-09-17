@@ -23,7 +23,7 @@ Search for `Zoorix` in the code; every change is commented.
 | `components/zoorix/zoorix-store.tsx`                                                        | `<zoorix-store>` with the cart's ID and `updatedAt`, and `product-path="/product/{handle}"` (this template's product route)                                 |
 | `app/layout.tsx`                                                                            | Loads the Zoorix script after hydration (`next/script`); renders `<ZoorixStore>` and `<zoorix-promotion-bar>`                                               |
 | `components/cart/modal.tsx`                                                                 | The cart button is wrapped in `<zoorix-cart-button>` and skips its own modal when the click was handled; the modal no longer auto-opens on quantity changes |
-| `components/zoorix/zoorix-product-offers.tsx`, `components/product/product-description.tsx` | `<zoorix-offers>` on the product page, with the selected variant                                                                                            |
+| `components/zoorix/zoorix-product-offers.tsx`, `components/product/product-description.tsx` | `<zoorix-offers>` on the product page, with the selected variant, rendered after mount                                                                      |
 | `zoorix.d.ts`                                                                               | JSX types for the Zoorix elements                                                                                                                           |
 
 The template already creates the cart on first load and keeps its ID in the `cartId` cookie, so

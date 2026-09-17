@@ -2,11 +2,17 @@
 
 import type { Product } from "lib/shopify/types";
 import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 // <zoorix-offers> for the product page, with the variant the shopper selected (same rule as
 // AddToCart: the options in the URL, or the only variant).
 export function ZoorixProductOffers({ product }: { product: Product }) {
   const searchParams = useSearchParams();
+  // Rendered only after mount: this sits inside the product page's <Suspense>, which can hydrate after
+  // Zoorix has started. If Zoorix fills the tag first, React finds content it didn't render.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const selected = product.variants.find((variant) =>
     variant.selectedOptions.every(
       (option) => option.value === searchParams.get(option.name.toLowerCase()),
@@ -15,6 +21,8 @@ export function ZoorixProductOffers({ product }: { product: Product }) {
   const variantId =
     selected?.id ??
     (product.variants.length === 1 ? product.variants[0]?.id : undefined);
+
+  if (!mounted) return null;
 
   return <zoorix-offers product-id={product.id} variant-id={variantId} />;
 }
