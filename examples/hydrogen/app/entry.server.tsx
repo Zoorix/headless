@@ -20,9 +20,10 @@ export default async function handleRequest(
       checkoutDomain: context.env.PUBLIC_CHECKOUT_DOMAIN,
       storeDomain: context.env.PUBLIC_STORE_DOMAIN,
     },
-    // Zoorix: its scripts and icons, and its API.
+    // Zoorix: its scripts and icons, its API, and the cart drawer's stylesheet (a data: URL).
     defaultSrc: [ZOORIX_ORIGIN, 'https://public.zoorix.com'],
     connectSrc: [ZOORIX_ORIGIN],
+    styleSrc: ['data:'],
   });
 
   const body = await renderToReadableStream(

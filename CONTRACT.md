@@ -169,7 +169,7 @@ If your storefront sends a CSP, allow:
 | `script-src` | `https://admin.zoorix-bundle-kit.com` | `zoorix.js` and the widgets it loads |
 | `connect-src` | `https://admin.zoorix-bundle-kit.com`, `https://your-shop.myshopify.com`, `https://cdn.shopify.com` | Zoorix's API; the Storefront API; exchange rates |
 | `img-src` | `https://cdn.shopify.com`, `https://admin.zoorix-bundle-kit.com`, `https://public.zoorix.com` | Product images; Zoorix icons |
-| `style-src` | `'unsafe-inline'` | Zoorix adds `<style>` elements for its widgets and your custom CSS |
+| `style-src` | `'unsafe-inline'`, `data:` | Zoorix adds `<style>` elements for its widgets and your custom CSS; the cart drawer's stylesheet is a `data:` URL |
 
 Custom JavaScript saved in Zoorix runs as an inline script; a CSP without `'unsafe-inline'` in
 `script-src` blocks it, and everything else keeps working.

@@ -103,15 +103,17 @@ const {nonce, header, NonceProvider} = createContentSecurityPolicy({
     checkoutDomain: context.env.PUBLIC_CHECKOUT_DOMAIN,
     storeDomain: context.env.PUBLIC_STORE_DOMAIN,
   },
-  // Zoorix: its scripts and icons, and its API.
+  // Zoorix: its scripts and icons, its API, and the cart drawer's stylesheet (a data: URL).
   defaultSrc: [ZOORIX_ORIGIN, 'https://public.zoorix.com'],
   connectSrc: [ZOORIX_ORIGIN],
+  styleSrc: ['data:'],
 });
 ```
 
 Hydrogen merges these with its defaults, which already allow `cdn.shopify.com`, your store domain and
-inline styles. If `PUBLIC_STORE_DOMAIN` isn't your `*.myshopify.com` domain, add
-`https://your-shop.myshopify.com` to `connectSrc` too.
+inline styles. Without `data:` in `styleSrc`, the Zoorix cart drawer opens unstyled, several screens
+tall. If `PUBLIC_STORE_DOMAIN` isn't your `*.myshopify.com` domain, add `https://your-shop.myshopify.com`
+to `connectSrc` too.
 
 Hydrogen's CSP allows scripts by nonce, not inline, so custom JavaScript saved in Zoorix doesn't run on
 a Hydrogen storefront. Everything else does.
